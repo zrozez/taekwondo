@@ -7,7 +7,7 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['id', 'worker', 'surname', 'name', 'patronymic', 'date_of_birth',
-                    'fio_parents', 'phone_number', 'email', 'status', 'date']
+                    'fio_parents', 'phone_number', 'email', 'status', 'date', 'color']
 
 class StudentDocumentSerializer(serializers.ModelSerializer):
 
