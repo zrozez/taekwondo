@@ -8,8 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 import environ
 import smtplib, ssl
 
-# from .tasks import send_mail_to_parent
-from .models import Student, StudentDocument, User
+from .models import Student, StudentDocument
 from .serializers import StudentSerializer, StudentDocumentSerializer
 
 class StudentViewSet(ModelViewSet):
@@ -20,21 +19,15 @@ class StudentViewSet(ModelViewSet):
     filter_fields = ['id', ]
     search_fields = ['surname', 'name', ]
 
-    # @action(methods=['get', ], detail=True)
-    # def parent_reminder(self, request, *args, **kwargs):
-    #     student = self.get_object()
-    #     send_mail_to_parent.delay(student.email, student.id)
-    #     return Response({'success': True})
-    @action(methods=['get', ], detail=True)
-    def parent_reminder(self, request, *args, **kwargs):
+    def reminder(self, receiver_email, message):
         student = self.get_object()
         env = environ.Env()
         port = env('EMAIL_HOST_PORT')
         smtp_server = "smtp.gmail.com"
         sender_email = env('EMAIL_HOST_USER')
-        receiver_email = student.email
+        receiver_email = receiver_email
         password = env('EMAIL_HOST_PASSWORD')
-        message = f"{student.surname} {student.name} uspeshno prinyat v gruppu!))"
+        message = message
         context = ssl.create_default_context()
         with smtplib.SMTP(smtp_server, port) as server:
             server.ehlo()  # Can be omitted
@@ -44,23 +37,17 @@ class StudentViewSet(ModelViewSet):
             server.sendmail(sender_email, receiver_email, message)
         return Response({'success': True})
 
+
+    @action(methods=['get', ], detail=True)
+    def parent_reminder(self, request, *args, **kwargs):
+        student = self.get_object()
+        self.reminder(student.email, f"Uchenik {student.surname} {student.name} uspeshno prinyat v gruppu!")
+        return Response({'success': True})
+
     @action(methods=['get', ], detail=True)
     def teacher_reminder(self, request, *args, **kwargs):
         student = self.get_object()
-        env = environ.Env()
-        port = env('EMAIL_HOST_PORT')
-        smtp_server = "smtp.gmail.com"
-        sender_email = env('EMAIL_HOST_USER')
-        receiver_email = student.worker.email
-        password = env('EMAIL_HOST_PASSWORD')
-        message = f"{student.surname} {student.name} podal zayavku!))"
-        context = ssl.create_default_context()
-        with smtplib.SMTP(smtp_server, port) as server:
-            server.ehlo()  # Can be omitted
-            server.starttls(context=context)
-            server.ehlo()  # Can be omitted
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message)
+        self.reminder(student.worker.email, f"{student.surname} {student.name} podal zayavku!")
         return Response({'success': True})
 
 class StudentDocumentViewSet(ModelViewSet):
